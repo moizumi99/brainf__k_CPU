@@ -10,7 +10,7 @@ The project has been tested with Quartus 13.1, which is the latest version that 
 - Tested on Ubuntu 16.04
 
 ## How to run
-1. Write the brainf\*\*k code into ram_data.hex in Intel HEX format. You can use txt2hex.c in tools folder to convert a brainf\*\*k code to HEX format.
+1. Write the brainf\*\*k code into rom_data.hex in Intel HEX format. You can use txt2hex.c in tools folder to convert a brainf\*\*k code to HEX format.
 2. On Quartus13.1, open project file "bf.qpf"
 3. Then, compile, and transfer the SOF file to DE-0
 4. Press Button[1] to reset the CPU state.
