@@ -1,12 +1,8 @@
 # Brainf__k CPU
 ## Whats this?
-A CPU that executes brainf\*\*k language.
+A CPU that executes brainf\*\*k language written in Verilog HDL. The CPU can run on FPGA. The target device is Terasic DE-0 with LCD.
 
-Written in Verilog HDL
-
-Can run on FPGA. Target is Terasic DE-0 with LCD
-
-Tested with Quartus 13.1
+The project has been tested with Quartus 13.1, which is the latest version that supports Cyclon III that is on DE-0.
 
 ## Requirements
 - DE-0 FPGA Board with LCD soldered
