@@ -21,7 +21,7 @@ https://esolangs.org/wiki/Brainfuck
 
 ## Limitations
 - Only tested with a few codes
-- Tested on Ubuntu 16.04
+- Tested only on Ubuntu 16.04
 - Input function has never been tested. I will work on this
 - Program ROM is 4K byte
 - RAM is 4K byte
