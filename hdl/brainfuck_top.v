@@ -1,5 +1,5 @@
 module brainfuck_top(
-					 input 		 clk, rst,
+					 input 		 clk, rst_n,
 					 output 	 LCD_BLON, //	LCD Back Light ON/OFF
 					 output 	 LCD_RW, //	LCD Read/Write Select, 0 = Write, 1 = Read
 					 output 	 LCD_EN, //	LCD Enable
@@ -12,22 +12,24 @@ module brainfuck_top(
    wire [7:0] 					 op;
    reg 							 op_en;
    wire [11:0] 					 dp;
-   wire [7:0] 					 d_o;
+   wire [15:0] 					 d_o;
    wire 						 w_en, w_sel, w_wait;
-   wire [7:0] 					 d_i;
+   wire [15:0] 					 d_i;
    wire 						 r_en, d_en, r_sel;
    wire 						 ram_w_en, ram_r_en;
    reg 							 ram_d_en;
-   wire [7:0] 					 ram_d_i;
+   wire [15:0] 					 ram_d_i;
    wire 						 s_rst;
    
    
-   wire 						 rst_n;
+   wire 						 rst;
    reg 							 lcd_wen;
    reg [8:0] 					 lcd_wdt;
    wire 						 lcd_status;
    wire [11:0] 					 pc;
    wire 						 pc_r;
+
+   assign rst = !rst_n;
    
    brainfuck bf( .clk(clk), .rst(rst), .s_rst(s_rst),
                  .pc(pc), .op_r_req(pc_r), .op(op),  .op_den(op_en), 
@@ -46,6 +48,7 @@ module brainfuck_top(
    reg [5:0] 					 cmd_len;
    wire 						 cmd_st, cmd_busy, cmd_en;
    integer 						 ci;
+						 
    
    always @(posedge clk or posedge rst) begin
 	  if (rst) begin
@@ -65,14 +68,14 @@ module brainfuck_top(
 			   cmd[ci] <= cmd[ci+1];
 			end
 			if (cmd_en) begin
-			   cmd[cmd_len-6'h1] = cmd_in;
+			   cmd[cmd_len-6'h1] <= cmd_in;
 			end
 			else begin
 			   cmd_len <= cmd_len - 6'h1;
 			end
 		 end
 		 else if (cmd_len < 6'd32 & cmd_en==1) begin
-			cmd[cmd_len] = cmd_in;
+			cmd[cmd_len] <= cmd_in;
 			cmd_len <= cmd_len + 6'h1;
 		 end
 	  end // else: !if(rst)
@@ -80,7 +83,7 @@ module brainfuck_top(
       
    assign cmd_st = (cmd_len>0 & cmd_busy==0);
    assign cmd_busy = lcd_status | lcd_wen;
-   assign cmd_in = {1'b1, d_o};
+   assign cmd_in = {1'b1, d_o[7:0]};
    assign cmd_en = (w_en & w_sel) ? 1'b1 : 1'b0;
    assign w_wait = (w_sel & cmd_len >= 6'h32) ? 1'b1 : 1'b0;
 
@@ -105,12 +108,12 @@ module brainfuck_top(
    drom	drom_inst ( .address ( pc ), .clock ( clk ), .q ( op ) );   
    
    // data memory
-   dmem dmem_inst (.address ( dp ),	.clock ( clk ), .data ( d_o ), .wren ( ram_w_en ), .q ( ram_d_i ));
+   dmem16 dmem_inst (.address ( dp ),	.clock ( clk ), .data ( d_o ), .wren ( ram_w_en ), .q ( ram_d_i ));
 
    assign ram_w_en = (w_sel==0) ? w_en : 1'b0;
    assign ram_r_en = (r_sel==0) ? r_en : 1'b0;
    assign d_en = (r_sel==0) ? ram_d_en : key_d_en;
-   assign d_i  = (r_sel==0) ? ram_d_i : key_in;
+   assign d_i  = (r_sel==0) ? ram_d_i : {8'h0, key_in};
    assign s_rst = 0;
 
    always @(posedge clk or posedge rst) begin

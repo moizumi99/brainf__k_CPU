@@ -2,39 +2,30 @@ module brainfuck(
 				  // input 			clk, rst, s_rst,
 				  input 			clk, rst, // clk and async signals
 				  input 			s_rst,
-//				  output reg [11:0] pc, 
 				  output reg [11:0] pc, 
-//				  output reg 		pc_r, 
 				  output reg 		op_r_req, 
 				  input [7:0] 		op, 
-//				  input 			op_en,
 				  input 			op_den, 
-//				  output reg [11:0] dp,
 				  output reg [11:0] dp_adr, 
-//				  output reg [7:0] 	d_o, 
-				  output reg [7:0] 	data_out, 
-//				  output reg 		w_en, w_sel,
+				  output reg [15:0] data_out, 
 				  output reg 		data_w_req, 
 				  output reg 		data_w_sel, 
-//				  input 			w_wait,
 				  input 			data_w_wait, 
-//				  input [7:0] 		d_i,
-				  input [7:0] 		data_in, 
-//				  output 			r_en,
+				  input [15:0] 		data_in, 
 				  output 			data_r_req,
-//				  output reg 		r_sel, 
 				  output reg 		data_r_sel, 
-//				  input 			d_en
 				  input 			data_den
 				  );
    reg [11:0] 	 pc_reg, pc_nxt;
    reg 			 data_r_req_reg;
-   reg 			 mov, mov_dir; // mov: 0, regular, 1: [ or ]
+   reg 			 mov; // mov: 0, regular operation, 1: [ or ]
+   reg 			 loop; // go back to [ from ]
    reg [11:0] 	 p_cnt; //  number of parenthesis skipped
    
-   reg [4:0] 	 cur_state, nxt_state; // state machine
+   reg [5:0] 	 cur_state, nxt_state; // state machine
    reg [7:0] 	 cur_op;
-   parameter INIT = 6'b00000, MEMI = 6'b00001, IDLE = 6'b00010, FETCH = 6'b00100, MEMR = 6'b01000, MEMW = 6'b10000;
+   parameter INIT = 6'b00000, MEMI = 6'b000001, IDLE = 6'b000010, FETCH = 6'b000100, MEMR = 6'b001000, MEMW = 6'b010000, HLT = 6'b100000;
+   
    
    reg 			 pc_inc, pc_dec;
    wire 		 mread, mwrite;
@@ -43,6 +34,12 @@ module brainfuck(
    localparam MEM_MAX = 12'hfff;
    localparam INIT_WAIT = 12'd4;
 
+   reg [11:0] 	 stack[63:0];
+   reg [5:0] 	 sp;
+
+   integer 		 i;
+   
+   
    // init_cnt
    always @(posedge clk or posedge rst) begin
 	  if (rst) begin
@@ -80,7 +77,7 @@ module brainfuck(
    end
    
    // state machine next state
-   always @(cur_state or op_den or mread or data_den or s_rst or init_cnt or mem_cnt or data_w_wait) begin
+   always @(cur_state or op_den or mread or data_den or s_rst or init_cnt or mem_cnt or data_w_wait or cur_op) begin
 	  if (s_rst)
 		nxt_state <= INIT;
 	  else begin
@@ -108,11 +105,13 @@ module brainfuck(
 			 else
 			   nxt_state <= MEMR;
 		   MEMW:
-			 if (data_w_wait==0)
+			 if (cur_op == 0)
+			   nxt_state <= HLT;
+			 else if (data_w_wait==0)
 			   nxt_state <= FETCH;
 			 else
 			   nxt_state <= MEMW;
-		   default: nxt_state <= FETCH; // IDLE
+		   default: nxt_state <= HLT; // HALT
 		 endcase // case (cur_state)
 	  end // else: !if(s_rst)
    end
@@ -127,11 +126,11 @@ module brainfuck(
 		pc_reg <= pc_nxt;
    end
    
-   always @(pc_inc or pc_dec or pc_reg) begin
-      if (pc_inc==1 & pc_dec==0)
+   always @(pc_inc or pc_dec or pc_reg or sp) begin
+      if (pc_inc==0 & pc_dec==1)
+		pc_nxt <= stack[sp];
+      else if (pc_inc==1 & pc_dec==0)
 		pc_nxt <= pc_reg + 12'b1;
-      else if (pc_inc==0 & pc_dec==1)
-		pc_nxt <= pc_reg - 12'b1;
       else
 		pc_nxt <= pc_reg;
    end
@@ -150,41 +149,54 @@ module brainfuck(
       if (rst)
 		begin
            mov <= 0;
-           mov_dir<= 0;
            p_cnt <= 0;
 		end
 	  else if (s_rst)
 		begin
            mov <= 0;
-           mov_dir<= 0;
            p_cnt <= 0;
 		end
       else if (cur_state==MEMR)
-		if (mov == 1)
-          begin
-			 if       ((mov_dir==0 & cur_op==8'h5B) | (mov_dir==1 & cur_op==8'h5D))
-               p_cnt <= p_cnt+12'b1;
-			 else if (((mov_dir==0 & cur_op==8'h5D) | (mov_dir==1 & cur_op==8'h5B)) & (p_cnt==0))
-        	   mov <= 0;
-			 else if  ((mov_dir==0 & cur_op==8'h5D) | (mov_dir==1 & cur_op==8'h5B))
-               p_cnt = p_cnt-12'b1; 
-          end
-		else if (data_den == 1'b1 & cur_op==8'h5B & data_in==0)
-          begin
-			 mov <= 1;
-			 mov_dir <= 0;
-			 p_cnt <= 0;
-          end
-		else if (data_den == 1'b1 & cur_op==8'h5D & data_in!=0)
-          begin
-			 mov <=1;
-			 mov_dir <= 1;
-			 p_cnt <= 0;
-          end
-   end
+		begin
+		   if (mov == 1)
+			 begin
+				if       (cur_op==8'h5B)
+				  p_cnt <= p_cnt+12'b1;
+				else if (cur_op==8'h5D & p_cnt==0)
+        		  mov <= 0;
+				else if (cur_op==8'h5D)
+				  p_cnt = p_cnt-12'b1; 
+			 end
+		   else if (data_den == 1'b1 & cur_op==8'h5B & data_in==0)
+			 begin
+				mov <= 1;
+				p_cnt <= 0;
+			 end
+		   else if (data_den == 1'b1 & cur_op==8'h5D & data_in!=0)
+			 mov <= 0;
+		end // if (cur_state==MEMR)
+   end // always @ (posedge clk or posedge rst)
+
+   always @(posedge clk or posedge rst) begin
+      if (rst)
+		begin
+		   loop <= 0;
+		end
+	  else if (s_rst)
+		begin
+		   loop <= 0;
+		end
+      else if (cur_state==MEMR)
+		if (mov==0 & data_den == 1'b1 & cur_op==8'h5D & data_in!=0)
+		  loop <= 1;
+		else
+		  loop <= 0;
+	  else if (cur_state==FETCH)
+		loop <= 0;
+   end // always @ (posedge clk or posedge rst)
    
    // decoder for PC change  
-   always @(cur_state or mov or mov_dir) begin
+   always @(cur_state or mov or loop) begin
       case (cur_state)
 		IDLE:
           begin
@@ -193,8 +205,8 @@ module brainfuck(
           end
 		MEMW:
           begin
-			 pc_inc <= (mov==0 | mov_dir==0) ? 1'b1 : 1'b0;
-			 pc_dec <= (mov==0 | mov_dir==0) ? 1'b0 : 1'b1;
+			 pc_inc <= (loop) ? 1'b0 : 1'b1;
+			 pc_dec <= (loop) ? 1'b1 : 1'b0;
           end
 		default:
           begin
@@ -221,6 +233,8 @@ module brainfuck(
 		dp_adr <= 0;
 	  else if (cur_state==MEMI)
 		dp_adr <= mem_cnt;
+	  else if (cur_state==IDLE)
+		dp_adr <= 0;
       else if (cur_state==MEMR & mov==0 & cur_op==8'h3C)
 		dp_adr <= dp_adr - 12'h1;
       else if (cur_state==MEMR & mov==0 & cur_op==8'h3E)
@@ -242,7 +256,8 @@ module brainfuck(
    end
    assign data_r_req = (cur_state==FETCH & nxt_state==MEMR & mread) | data_r_req_reg;
    
-   assign mread = (mov==0 & (op==8'h2B | op==8'h2D | op==8'h2C | op==8'h5B | op==8'h5D)) ? 1'b1 : 1'b0;
+   assign mread = (mov==0 & (op==8'h2B | op==8'h2C | op==8'h2D | op==8'h2E | op==8'h5B | op==8'h5D)) ? 1'b1 : 1'b0;
+//   assign mread = (mov==0 & op!=8'h2C) ? 1'b1 : 1'b0;
    
    // data read
    always @(posedge clk or posedge rst) begin
@@ -256,9 +271,9 @@ module brainfuck(
 		else if (mov==1)
           data_out <= data_out; // no operation. Just for readability
 		else if (cur_state==MEMR & data_den==1 & cur_op==8'h2B) // +
-          data_out <= data_in + 8'b1;
+          data_out <= data_in + 16'b1;
 		else if (cur_state==MEMR & data_den==1 & cur_op==8'h2D)  // -
-          data_out <= data_in - 8'b1;
+          data_out <= data_in - 16'b1;
 		else if (cur_state==MEMR & data_den==1)
           data_out <= data_in;
    end
@@ -303,5 +318,26 @@ module brainfuck(
 		data_w_sel <= 0;
    end
 
+   // Stack for loop
+   always @(posedge clk or posedge rst) begin
+	  if (rst) begin
+		 sp <= 12'h0;
+		 for(i=0; i<64; i=i+1) begin
+			stack[i] <= 12'h0;
+		 end
+	  end
+	  else if (s_rst)
+		sp <= 12'h0;
+	  else if (cur_state==MEMR) begin
+		if (op==8'h5B) begin
+		   stack[sp] <= pc_reg;
+		   sp <= sp + 5'h1;
+		end
+		else if (op==7'h5D ) begin
+		   sp <= sp - 5'h1;
+		end
+	  end
+   end // always @ (posedge clk or posedge rst)
+   
 endmodule
 
