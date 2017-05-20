@@ -1,4 +1,10 @@
 # Brainf__k CPU
+## update
+Now, the loop command "]" uses stack to find the return address instead of searching for a corresponding "["
+PIPELINE processing is implemented
+Can execute up to 4 consecutive commands of "+-" or "<>"
+Now it is 6 times faster than the first version.
+
 ## Whats this?
 A CPU that executes brainf\*\*k language written in Verilog HDL. The CPU can run on FPGA. The target device is Terasic DE0 with LCD.
 
@@ -13,7 +19,7 @@ https://esolangs.org/wiki/Brainfuck
 - Quartus 13.1 and PC environment that can program DE0
 
 ## How to run
-1. Write the brainf\*\*k code into rom_data.hex in Intel HEX format. You can use txt2hex.c in tools folder to convert a brainf\*\*k code to HEX format.
+1. Write the brainf\*\*k code into rom_data.hex in MIF format. You can use txt2mif.c in tools folder to convert a brainf\*\*k code to MIF format.
 2. On Quartus13.1, open project file "bf.qpf"
 3. Then, compile, and transfer the SOF file to DE-0
 4. Press Button[1] to reset the CPU state.
