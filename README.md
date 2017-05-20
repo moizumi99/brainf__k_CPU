@@ -1,5 +1,5 @@
 # Brainf__k CPU
-## update
+## Update 5/20/2017
 Now, the loop command "]" uses stack to find the return address instead of searching for a corresponding "["
 PIPELINE processing is implemented
 Can execute up to 4 consecutive commands of "+-" or "<>"
