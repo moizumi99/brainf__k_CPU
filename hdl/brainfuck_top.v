@@ -9,7 +9,7 @@ module brainfuck_top(
 					 input 		 key_d_en 		 
 					 );
 
-   wire [7:0] 					 op;
+   wire [31:0] 					 op;
    reg 							 op_en;
    wire [11:0] 					 dp;
    wire [15:0] 					 d_o;
@@ -26,7 +26,7 @@ module brainfuck_top(
    reg 							 lcd_wen;
    reg [8:0] 					 lcd_wdt;
    wire 						 lcd_status;
-   wire [11:0] 					 pc;
+   wire [9:0] 					 pc;
    wire 						 pc_r;
 
    assign rst = !rst_n;
@@ -105,7 +105,7 @@ module brainfuck_top(
    
    
    // program memory
-   drom	drom_inst ( .address ( pc ), .clock ( clk ), .q ( op ) );   
+   drom32	drom_inst ( .address ( pc ), .clock ( clk ), .q ( op ) );   
    
    // data memory
    dmem16 dmem_inst (.address ( dp ),	.clock ( clk ), .data ( d_o ), .wren ( ram_w_en ), .q ( ram_d_i ));
