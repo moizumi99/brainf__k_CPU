@@ -61,8 +61,6 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
 set_location_assignment PIN_B12 -to clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
-set_location_assignment PIN_G3 -to rst
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to rst
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LCD_BLON
 set_location_assignment PIN_C20 -to LCD_DATA[7]
 set_location_assignment PIN_C21 -to LCD_DATA[3]
@@ -105,10 +103,12 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key_in[3]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key_in[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key_in[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key_in[0]
+set_location_assignment PIN_G3 -to rst_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to rst_n
+set_global_assignment -name VERILOG_FILE hdl/drom32.v
 set_global_assignment -name SDC_FILE bf.sdc
 set_global_assignment -name VERILOG_FILE hdl/lcdcontrol.v
 set_global_assignment -name VERILOG_FILE hdl/brainfuck_top.v
 set_global_assignment -name VERILOG_FILE hdl/brainfuck.v
-set_global_assignment -name QIP_FILE hdl/drom.qip
-set_global_assignment -name QIP_FILE hdl/dmem.qip
+set_global_assignment -name QIP_FILE hdl/dmem16.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
