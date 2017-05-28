@@ -39,7 +39,7 @@ void main(int argc, char *argv[]) {
   
   fseek(f1, 0, SEEK_SET);
   
-  fprintf(f2, "DEPTH = 1024;\n");
+  fprintf(f2, "DEPTH = 4096;\n");
   fprintf(f2, "WIDTH = 32;\n");
   fprintf(f2, "ADDRESS_RADIX = HEX;\n");
   fprintf(f2, "DATA_RADIX = HEX;\n");
