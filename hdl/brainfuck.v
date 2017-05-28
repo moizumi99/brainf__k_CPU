@@ -1,6 +1,6 @@
 
 module brainfuck
-  #( parameter AWIDTH = 12, DWIDTH = 16, PWIDTH = 10)
+  #( parameter AWIDTH = 12, DWIDTH = 16, PWIDTH = 12)
    // AWIDTH: Data address bits
    // DWIDTH: Data bits
    // PWIDTH: Program counter bits
@@ -32,16 +32,16 @@ module brainfuck
    // 8'h3E: >
    // 8'h5B: [
    // 8'h5D: ]
-   parameter OP_PLUS = 8'h2B, OP_DIN = 8'h2c, OP_MINUS = 8'h2D, OP_DOUT = 8'h2E;
-   parameter OP_LEFT = 8'h3C, OP_RIGHT = 8'h3E, OP_LOOP_ST = 8'h5B, OP_LOOP_END = 8'h5D, OP_HLT = 8'h00;
-   parameter CMD_NOP   = 3'b000;
-   parameter CMD_PLUS  = 3'b010;
-   parameter CMD_RIGHT = 3'b001;
-   parameter CMD_DIN   = 3'b011;
-   parameter CMD_DOUT  = 3'b100;
-   parameter CMD_LST   = 3'b101;
-   parameter CMD_LEND  = 3'b110;
-   parameter CMD_HLT   = 3'b111;
+   localparam OP_PLUS = 8'h2B, OP_DIN = 8'h2c, OP_MINUS = 8'h2D, OP_DOUT = 8'h2E;
+   localparam OP_LEFT = 8'h3C, OP_RIGHT = 8'h3E, OP_LOOP_ST = 8'h5B, OP_LOOP_END = 8'h5D, OP_HLT = 8'h00;
+   localparam CMD_NOP   = 3'b000;
+   localparam CMD_PLUS  = 3'b010;
+   localparam CMD_RIGHT = 3'b001;
+   localparam CMD_DIN   = 3'b011;
+   localparam CMD_DOUT  = 3'b100;
+   localparam CMD_LST   = 3'b101;
+   localparam CMD_LEND  = 3'b110;
+   localparam CMD_HLT   = 3'b111;
    
    // Initialization
    localparam MEM_MAX = {AWIDTH{1'b1}};
@@ -50,7 +50,7 @@ module brainfuck
    reg [AWIDTH-1:0]    mem_cnt;
    
    // high level state machine
-   parameter INIT = 4'b0000, MEMI = 4'b0001, PREFETCH = 4'b0010, OPR = 4'b0100, HLT = 4'b1000;
+   localparam INIT = 4'b0000, MEMI = 4'b0001, PREFETCH = 4'b0010, OPR = 4'b0100, HLT = 4'b1000;
    reg [4:0] 		   cur_state;
    reg [4:0] 		   nxt_state;
    reg 				   hlt_en;
@@ -87,8 +87,7 @@ module brainfuck
    // fetch and decode
    wire [31:0] 		   op_le; // convert to little endian
    wire 			   op_r_req_cur;
-   reg 				   op_r_req_z;
-//   reg [PWIDTH+1:0]  pc_z;
+	//   reg [PWIDTH+1:0]  pc_z;
    wire [1:0] 		 index;
    wire [63:0] 		 op64; // history of up to 8 commands
    wire [31:0] 		 op32; // current 4 commands
@@ -196,7 +195,7 @@ module brainfuck
 				   (pc_dly) ? pc_reg :
 				   (cmd0 == CMD_LEND & dat_new!=0) ? stack[sp-1] : pc_reg + pc_inc;
 
-   assign pc_prefetch = pc_nxt + 12'h4;
+   assign pc_prefetch = pc_nxt + 14'h4;
    assign pc = (nxt_state==PREFETCH) ? pc_nxt[PWIDTH+1:2] : pc_prefetch[PWIDTH+1:2];
 
 //   assign op_le = {op[7:0], op[15:8], op[23:16], op[31:24]};
@@ -272,9 +271,9 @@ module brainfuck
    assign cmd2_nop = (cmd[2]==CMD_NOP) & (cmd1_nop);
    assign cmd3_nop = (cmd[3]==CMD_NOP) & (cmd2_nop);
    
-   assign pc_inc = (val3_plus_en | val3_right_en | cmd3_nop) ? 4'h4 :
-				   (val2_plus_en | val2_right_en | cmd2_nop) ? 4'h3 :
-				   (val1_plus_en | val1_right_en | cmd1_nop) ? 4'h2 : 4'h1;
+   assign pc_inc = (val3_plus_en | val3_right_en | cmd3_nop) ? 3'h4 :
+				   (val2_plus_en | val2_right_en | cmd2_nop) ? 3'h3 :
+				   (val1_plus_en | val1_right_en | cmd1_nop) ? 3'h2 : 3'h1;
    // find the first command
    assign cmd0  = cmd[0];
    
@@ -283,20 +282,11 @@ module brainfuck
    
    // delay by one clock if the previous operation is reading from memory
    assign pc_dly = ((cmd0==CMD_LEND | cmd0==CMD_LST) & (cmd_1st==CMD_RIGHT | cmd_1st==CMD_RIGHT | cmd_1st==CMD_DIN));
-   assign op_r_req_cur = (nxt_state==PREFETCH) ? 1 :
-						 (cur_state==PREFETCH) ? 1 :
-						 (cur_state==OPR & pc_reg[PWIDTH+1:2] != pc_nxt[PWIDTH+1:2]) ? 1 : 0;
+   assign op_r_req_cur = (nxt_state==PREFETCH) ? 1'b1 :
+						 (cur_state==PREFETCH) ? 1'b1 :
+						 (cur_state==OPR & pc_reg[PWIDTH+1:2] != pc_nxt[PWIDTH+1:2]) ? 1'b1 : 1'b0;
 
    assign op_r_req = op_r_req_cur;
-   always @(posedge clk or posedge rst) begin
-	  if (rst)
-		op_r_req_z <= 0;
-	  else if (s_rst)
-		op_r_req_z <= 0;
-	  else
-		op_r_req_z <= op_r_req_cur;
-   end
-   
 
    always @(posedge clk or posedge rst) begin
 	  if (rst)
@@ -310,20 +300,20 @@ module brainfuck
    // Stack for loop
    always @(posedge clk or posedge rst) begin
 	  if (rst) begin
-		 sp <= 12'h0;
+		 sp <= 6'h0;
 		 for(i=0; i<64; i=i+1) begin
-			stack[i] <= 12'h0;
+			stack[i] <= 6'h0;
 		 end
 	  end
 	  else if (s_rst)
-		sp <= 12'h0;
+		sp <= 6'h0;
 	  else begin
 		if (cmd_0st==CMD_LST & dat_new!=0) begin
 		   stack[sp] <= pc_nxt;
-		   sp <= sp + 5'h1;
+		   sp <= sp + 6'h1;
 		end
 		else if (cmd_0st==CMD_LEND & dat_new==0) begin
-		   sp <= sp - 5'h1;
+		   sp <= sp - 6'h1;
 		end
 	  end
    end // always @ (posedge clk or posedge rst)
@@ -352,9 +342,9 @@ module brainfuck
 		 if (!pc_mov)
 		   jmp_cnt <= 0;
 		 else if (cmd0==CMD_LST[2:0])
-		   jmp_cnt <= jmp_cnt + 1;
+		   jmp_cnt <= jmp_cnt + 6'h1;
 		 else if (cmd0==CMD_LEND[2:0] & jmp_cnt!=0)
-		   jmp_cnt <= jmp_cnt - 1;
+		   jmp_cnt <= jmp_cnt - 6'h1;
 	  end
    end // always @ (posedge clk or posedge rst)
    
@@ -487,7 +477,7 @@ module brainfuck
    end // always @ (posedge clk or posedge rst)
    
    // if the previous operation is <, >, or , use the input as the target of operation
-   assign dat_fwd = (!data_r_sel_z & !data_den) ? 0 : data_in; // if data_den==0 and data is from outside (not memory), replace it with zero
+   assign dat_fwd = (!data_r_sel_z & !data_den) ? 16'h0 : data_in; // if data_den==0 and data is from outside (not memory), replace it with zero
    
    always @(posedge clk or posedge rst) begin
 	  if (rst)
