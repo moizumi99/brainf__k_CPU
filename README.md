@@ -1,5 +1,12 @@
 # Brainf__k CPU
-## Update 5/20/2017
+## Updates 
+5/27/2017
+Support 16KB program
+Support TXD output through GPIO (Connext your RXD to GPIO01_D5, GND to GPIO1 GND)
+Mandelbrot.b can run now. Enjoy
+https://youtu.be/7C1cCE1fIII
+
+5/20/2017
 Now, the loop command "]" uses stack to find the return address instead of searching for a corresponding "["
 PIPELINE processing is implemented
 Can execute up to 4 consecutive commands of "+-" or "<>"
