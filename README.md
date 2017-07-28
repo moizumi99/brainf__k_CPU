@@ -30,11 +30,11 @@ https://esolangs.org/wiki/Brainfuck
 2. On Quartus13.1, open project file "bf.qpf"
 3. Then, compile, and transfer the SOF file to DE-0
 4. Press Button[1] to reset the CPU state.
-5. You will see output on the LCD
+5. You will see output on the LCD and Tx port
 
 ## Limitations
 - Only tested with a few codes
 - Tested only on Ubuntu 16.04
 - Input function has never been tested. I will work on this
-- Program ROM is 4K byte
+- Program ROM is 16K byte
 - RAM is 4K byte
